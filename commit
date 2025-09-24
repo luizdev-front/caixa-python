@@ -1,0 +1,105 @@
+import sqlite3
+from datetime import datetime
+
+
+def criar_banco():
+    conn = sqlite3.connect("mercado.db")
+    cursor = conn.cursor()
+
+    # Produtos
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS produtos (
+            codigo TEXT PRIMARY KEY,
+            nome TEXT,
+            preco REAL
+        )
+    """)
+
+    # Vendas
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS vendas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo TEXT,
+            nome TEXT,
+            preco REAL,
+            data_hora TEXT
+        )
+    """)
+
+    # Produtos de exemplo
+    produtos_exemplo = [
+        ("7891000055123", "Arroz 5kg", 22.90),
+        ("7891000055130", "Feijão 1kg", 7.50),
+        ("7891000055147", "Macarrão 500g", 4.30),
+        ("7891000055154", "Leite 1L", 5.20),
+    ]
+    try:
+        cursor.executemany("INSERT INTO produtos VALUES (?, ?, ?)", produtos_exemplo)
+    except sqlite3.IntegrityError:
+        pass  # Se já existir, não insere de novo
+
+    conn.commit()
+    conn.close()
+
+def buscar_produto(codigo):
+    conn = sqlite3.connect("mercado.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT nome, preco FROM produtos WHERE codigo = ?", (codigo,))
+    resultado = cursor.fetchone()
+    conn.close()
+    return resultado
+
+registrar_venda(codigo, nome, preco):
+    conn = sqlite3.connect("mercado.db")
+    cursor = conn.cursor()
+    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("INSERT INTO vendas (codigo, nome, preco, data_hora) VALUES (?, ?, ?, ?)",
+                   (codigo, nome, preco, agora))
+    conn.commit()
+    conn.close()
+
+
+def relatorio_dia():
+    hoje = datetime.now().strftime("%Y-%m-%d")
+    conn = sqlite3.connect("mercado.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT nome, preco, data_hora FROM vendas WHERE data_hora LIKE ?", (f"{hoje}%",))
+    vendas = cursor.fetchall()
+    conn.close()
+
+    if not vendas:
+        print("\nNenhuma venda registrada hoje.\n")
+        return
+
+    print("\n=== RELATÓRIO DO DIA ===")
+    total = 0
+    for nome, preco, data_hora in vendas:
+        print(f"{data_hora} | {nome} - R$ {preco:.2f}")
+        total += preco
+    print(f"\nTOTAL DO DIA: R$ {total:.2f}\n")
+
+def main():
+    print("=== Sistema de Caixa (com Relatório) ===")
+    print("Passe o código de barras ou digite 'relatorio' para ver as vendas do dia, 'sair' para fechar.\n")
+
+    while True:
+        codigo = input("Bip: ").strip()
+
+        if codigo.lower() == "sair":
+            print("Caixa encerrado.")
+            break
+        elif codigo.lower() == "relatorio":
+            relatorio_dia()
+            continue
+
+        produto = buscar_produto(codigo)
+        if produto:
+            nome, preco = produto
+            print(f"Produto: {nome} | Preço: R$ {preco:.2f}\n")
+            registrar_venda(codigo, nome, preco)
+        else:
+            print("Produto não encontrado no sistema.\n")
+
+if __name__ == "__main__":
+    criar_banco()
+    main()
