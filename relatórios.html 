@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Relatório</title>
+</head>
+<body>
+  <h1>Relatório do Dia</h1>
+  <ul>
+    {% for nome, preco, data in vendas %}
+      <li>{{ data }} - {{ nome }} - R$ {{ preco }}</li>
+    {% endfor %}
+  </ul>
+  <h3>Total: R$ {{ total }}</h3>
+  <a href="/">Voltar</a>
+</body>
+</html>
